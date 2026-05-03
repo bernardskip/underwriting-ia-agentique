@@ -6,7 +6,7 @@ import {
 import { 
   AlertTriangle, Cpu, FileText, Banknote, ShieldCheck, 
   Sliders, Scale, Leaf, TrendingDown, Award, Ban,
-  Download, GitCompare, Cloud, HardDrive
+  Download, GitCompare, Cloud, HardDrive, Info
 } from 'lucide-react';
 
 // Formateur en Euros
@@ -36,9 +36,9 @@ const App = () => {
   const [niveauAutonomie, setNiveauAutonomie] = useState(3); 
   const [donneesSensibles, setDonneesSensibles] = useState(2); 
   
-  // 2. Environnement Réglementaire & Architecture (NOUVEAU)
+  // 2. Environnement Réglementaire & Architecture 
   const [euAiAct, setEuAiAct] = useState(1.2); 
-  const [modeleLLM, setModeleLLM] = useState('cloud_openai'); // cloud_openai, cloud_anthropic, local_os
+  const [modeleLLM, setModeleLLM] = useState('cloud_openai');
   const [tauxCession, setTauxCession] = useState(30); 
 
   // 3. Structuration du Programme (Mitigation & Exclusions)
@@ -48,15 +48,14 @@ const App = () => {
   const [exclureIP, setExclureIP] = useState(false); 
   const [exclureCorporel, setExclureCorporel] = useState(false); 
 
-  // 4. A/B Testing - Scénario Sauvegardé (NOUVEAU)
+  // 4. A/B Testing - Scénario Sauvegardé
   const [scenarioA, setScenarioA] = useState(null);
 
   // 5. Moteur de Pricing Actuariel
   const calculs = useMemo(() => {
-    // Multiplicateurs de Risque d'Accumulation (Architecture LLM)
     const isLocal = modeleLLM === 'local_os';
-    const cloudDependencyMultiplier = isLocal ? 0.4 : 1.5; // Perte d'exploitation si API down
-    const selfHostedCyberRisk = isLocal ? 1.4 : 1.0; // Cyber-attaque sur l'infra locale du client
+    const cloudDependencyMultiplier = isLocal ? 0.4 : 1.5; 
+    const selfHostedCyberRisk = isLocal ? 1.4 : 1.0; 
 
     // A. EXPOSITION BRUTE
     const baseExposure = caClient * 1000000 * 0.10; 
@@ -97,10 +96,10 @@ const App = () => {
     let esgScore = baseEsg - (niveauAutonomie * 5) - (donneesSensibles * 2) - ((euAiAct - 1) * 20);
     if (hasGuardrails) esgScore += 15;
     if (hasAudit) esgScore += 20;
-    if (isLocal) esgScore += 10; // Prime à la souveraineté des données (ESG positif)
+    if (isLocal) esgScore += 10; 
     esgScore = Math.min(100, Math.max(0, esgScore));
 
-    // G. VENTILATION DES RISQUES (Radar ajusté par l'Architecture)
+    // G. VENTILATION DES RISQUES (Radar)
     let cyberRisk = Math.min(100, 20 * donneesSensibles * secteur * riskDiscount * selfHostedCyberRisk);
     let eoRisk = Math.min(100, 15 * niveauAutonomie * euAiAct * riskDiscount);
     let complianceRisk = Math.min(100, 30 * euAiAct * (donneesSensibles / 2));
@@ -111,6 +110,8 @@ const App = () => {
 
     return {
       pml: pmlNet,
+      pmlBrut,
+      reductionPML: (1 - riskDiscount) * 100,
       primeCommerciale,
       primeNetteConservee,
       primeCedee,
@@ -145,7 +146,6 @@ const App = () => {
 
   const resetScenarioA = () => setScenarioA(null);
 
-  // Fonction factice d'impression (Génération PDF native du navigateur)
   const handlePrint = () => {
     window.print();
   };
@@ -153,37 +153,37 @@ const App = () => {
   const isLocalLLM = modeleLLM === 'local_os';
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800 flex flex-col">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800 flex flex-col print:bg-white print:p-0">
       
       {/* HEADER AVEC BOUTON EXPORT */}
-      <header className="max-w-7xl mx-auto w-full mb-8 flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 pb-6 gap-4 shrink-0">
+      <header className="max-w-7xl mx-auto w-full mb-8 flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 pb-6 gap-4 shrink-0 print:border-b-2 print:border-slate-800 print:pb-4">
         <div className="flex items-center gap-4">
-          <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200">
+          <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200 print:bg-slate-800 print:shadow-none">
             <Cpu className="text-white w-8 h-8" />
           </div>
           <div>
             <h1 className="text-2xl font-black uppercase italic tracking-tight text-slate-800">
-              Agentic AI : Underwriting Engine
+              Agentic AI : Underwriting Term Sheet
             </h1>
-            <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+            <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest print:text-slate-500">
               AlgoPolis - Stratégie RC Pro, Cyber & Réassurance
             </p>
           </div>
         </div>
         
-        {/* BOUTON D'ACTION MÉTIER (PDF) */}
+        {/* BOUTON D'ACTION MÉTIER (PDF) - Caché à l'impression */}
         <button 
           onClick={handlePrint}
-          className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-lg shadow-slate-200"
+          className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-lg shadow-slate-200 print:hidden"
         >
-          <Download className="w-4 h-4" /> Term Sheet (PDF)
+          <Download className="w-4 h-4" /> Imprimer / PDF
         </button>
       </header>
 
-      <main className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+      <main className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 print:gap-4">
         
-        {/* COLONNE GAUCHE : INPUTS */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* COLONNE GAUCHE : INPUTS (Cachée à l'impression pour faire propre) */}
+        <div className="lg:col-span-4 space-y-6 print:hidden">
           
           {/* BLOC 1 : PROFIL ASSURÉ */}
           <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
@@ -238,16 +238,14 @@ const App = () => {
                 </div>
               </div>
 
-              {/* Modèle Fondamental (Risque Accumulation) */}
               <div className={`p-4 rounded-2xl border ${isLocalLLM ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}`}>
                 <label className={`text-[10px] font-bold uppercase mb-2 flex items-center gap-2 ${isLocalLLM ? 'text-emerald-600' : 'text-blue-600'}`}>
                   {isLocalLLM ? <HardDrive className="w-3 h-3" /> : <Cloud className="w-3 h-3" />} 
                   Modèle Fondamental (LLM)
                 </label>
                 <select value={modeleLLM} onChange={(e) => setModeleLLM(e.target.value)} className={`w-full p-2 bg-white border rounded-xl text-xs font-bold outline-none ${isLocalLLM ? 'border-emerald-200 text-emerald-700' : 'border-blue-200 text-blue-700'}`}>
-                  <option value="cloud_openai">Cloud : OpenAI GPT-4 (Risque Accumulation)</option>
-                  <option value="cloud_anthropic">Cloud : Anthropic Claude</option>
-                  <option value="local_os">Local : Mistral / Llama (Risque Cyber interne)</option>
+                  <option value="cloud_openai">Cloud API (Risque Accumulation)</option>
+                  <option value="local_os">Modèle Local (Risque Cyber interne)</option>
                 </select>
               </div>
 
@@ -337,7 +335,6 @@ const App = () => {
                 </div>
               </div>
               
-              {/* BOUTON A/B TESTING */}
               <div className="pt-4 border-t border-slate-600">
                 <button 
                   onClick={saveScenarioA}
@@ -350,37 +347,12 @@ const App = () => {
           </div>
         </div>
 
-        {/* COLONNE DROITE : DASHBOARD DE PRICING (OUTPUTS) */}
-        <div className="lg:col-span-8 space-y-6">
+        {/* COLONNE DROITE : DASHBOARD DE PRICING (OUTPUTS) - S'étend à l'impression */}
+        <div className="lg:col-span-8 space-y-6 relative print:col-span-12 print:w-full">
           
-          {/* LIGNE DES KPIS PRINCIPAUX */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-rose-100 relative overflow-hidden group">
-              <AlertTriangle className="absolute -right-8 -bottom-8 w-40 h-40 text-rose-50 opacity-50 group-hover:opacity-100 transition-opacity" />
-              <div className="relative z-10">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-3">Probable Maximum Loss (PML)</h3>
-                <p className="text-4xl lg:text-5xl font-black mb-2 tracking-tight text-slate-800">{formatEuro(calculs.pml)}</p>
-                <p className="text-xs font-medium text-slate-500 leading-relaxed">
-                  Plafond d'exposition ajusté (Exclusions, EU AI Act, Prévention).
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-indigo-600 text-white p-8 rounded-[2rem] shadow-xl shadow-indigo-200 border border-indigo-500 relative overflow-hidden group">
-              <Banknote className="absolute -right-8 -bottom-8 w-40 h-40 text-indigo-500 opacity-50 group-hover:opacity-70 transition-opacity" />
-              <div className="relative z-10">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">Prime Commerciale Totale</h3>
-                <p className="text-4xl lg:text-5xl font-black mb-2 tracking-tight">{formatEuro(calculs.primeCommerciale)}</p>
-                <p className="text-xs font-medium text-indigo-200 leading-relaxed">
-                  Prime globale payée par l'assuré (100% du risque avant réassurance).
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* PANNEAU A/B TESTING (Apparaît si Scénario A sauvegardé) */}
+          {/* PANNEAU A/B TESTING - STICKY EN HAUT */}
           {scenarioA && (
-            <div className="bg-slate-800 p-6 rounded-[2rem] shadow-lg border border-indigo-500 flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
+            <div className="sticky top-4 z-50 bg-slate-900/95 backdrop-blur-md p-6 rounded-[2rem] shadow-2xl border border-indigo-500 flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 print:hidden">
               <div className="flex-1">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-1 flex items-center gap-2">
                   <GitCompare className="w-4 h-4" /> Comparateur : Actuel vs Scénario A
@@ -408,44 +380,130 @@ const App = () => {
             </div>
           )}
 
-          {/* ANALYSES AVANCÉES (ESG & ROI) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-2">
-                  <TrendingDown className="w-4 h-4" /> ROI de la Prévention
-                </h3>
-                <p className="text-2xl font-black text-emerald-700">
-                  {calculs.economiePrevention > 0 ? `-${formatEuro(calculs.economiePrevention)}` : '0 €'}
+          {/* LIGNE DES KPIS PRINCIPAUX */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4">
+            <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-rose-100 relative overflow-hidden group print:border-2 print:border-rose-200">
+              <AlertTriangle className="absolute -right-8 -bottom-8 w-40 h-40 text-rose-50 opacity-50 group-hover:opacity-100 transition-opacity print:opacity-20" />
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-rose-500">Exposition Maximale (PML)</h3>
+                  {calculs.reductionPML > 0 && (
+                    <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black px-2 py-1 rounded-full uppercase">
+                      -{calculs.reductionPML.toFixed(0)}% Risque
+                    </span>
+                  )}
+                </div>
+                <p className="text-4xl lg:text-5xl font-black mb-2 tracking-tight text-slate-800">{formatEuro(calculs.pml)}</p>
+                <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                  Plafond d'exposition ajusté selon les exclusions contractuelles et la prévention technique.
                 </p>
-                <p className="text-[9px] font-bold text-emerald-500 uppercase mt-1">Économie de prime annuelle</p>
-              </div>
-              <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                <Banknote className="w-6 h-6 text-emerald-500" />
               </div>
             </div>
 
-            <div className="bg-teal-50 p-6 rounded-[2rem] border border-teal-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-1 flex items-center gap-2">
-                  <Leaf className="w-4 h-4" /> Score de Gouvernance IA (ESG)
-                </h3>
-                <p className="text-2xl font-black text-teal-700">{calculs.esgScore} / 100</p>
-                <p className="text-[9px] font-bold text-teal-500 uppercase mt-1">Évaluation extra-financière</p>
-              </div>
-              <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
-                <Award className="w-6 h-6 text-teal-500" />
+            <div className="bg-indigo-600 text-white p-8 rounded-[2rem] shadow-xl shadow-indigo-200 border border-indigo-500 relative overflow-hidden group print:bg-white print:text-slate-800 print:shadow-none print:border-2 print:border-indigo-600">
+              <Banknote className="absolute -right-8 -bottom-8 w-40 h-40 text-indigo-500 opacity-50 group-hover:opacity-70 transition-opacity print:text-indigo-50 print:opacity-100" />
+              <div className="relative z-10">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3 print:text-indigo-600">Prime Commerciale Totale</h3>
+                <p className="text-4xl lg:text-5xl font-black mb-2 tracking-tight">{formatEuro(calculs.primeCommerciale)}</p>
+                <p className="text-xs font-medium text-indigo-200 leading-relaxed print:text-slate-500">
+                  Prime globale payée par l'assuré (100% du risque avant réassurance et commissions).
+                </p>
               </div>
             </div>
           </div>
 
-          {/* LIGNE DES GRAPHIQUES */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 h-80 flex flex-col">
-              <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest text-center">
-                Ventilation : Rétention vs Cession
+          {/* LE RADAR GÉANT EN PLEINE LARGEUR */}
+          <div className="bg-white p-6 md:p-10 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-8 print:break-inside-avoid">
+            
+            <div className="flex-1 w-full min-h-[350px]">
+              <h3 className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest text-center">
+                Radar de Risque Systémique
               </h3>
-              <div className="flex-1 w-full min-h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="65%" data={calculs.radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                  <PolarGrid stroke="#e2e8f0" />
+                  <PolarAngleAxis dataKey="subject" fontSize={10} stroke="#475569" fontWeight="bold" />
+                  <Radar 
+                    name="Exposition" 
+                    dataKey="A" 
+                    stroke="#4f46e5" 
+                    strokeWidth={3}
+                    fill="#818cf8" 
+                    fillOpacity={0.4} 
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Panneau d'Analyse Dynamique */}
+            <div className="md:w-1/3 space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 flex items-center gap-2 mb-4">
+                <Info className="w-4 h-4" /> Analyse en temps réel
+              </h4>
+              
+              <ul className="space-y-4 text-xs font-medium text-slate-600">
+                {isLocalLLM ? (
+                  <li><strong className="text-emerald-600">Modèle Local :</strong> Réduit massivement le risque de Perte d'Exploitation (pas de dépendance API), mais accroît l'exposition Cyber interne.</li>
+                ) : (
+                  <li><strong className="text-rose-600">Modèle Cloud :</strong> Dépendance forte au fournisseur tiers. Risque d'accumulation et de Perte d'Exploitation élevé.</li>
+                )}
+
+                {hasGuardrails && (
+                  <li><strong className="text-emerald-600">Garde-Fous Actifs :</strong> Le bridage LLM (RAG) diminue la surface de réponse, réduisant directement le risque d'Hallucination (E&O).</li>
+                )}
+
+                {exclureCorporel ? (
+                  <li><strong className="text-indigo-600">Exclusion Corporelle :</strong> Le risque vital est transféré à l'assuré, écrasant la sévérité du PML pour l'assureur.</li>
+                ) : (
+                  <li><strong className="text-amber-600">RC Corporelle Couverte :</strong> Exposition maximale en cas de décision algorithmique entraînant des dommages physiques.</li>
+                )}
+
+                {euAiAct >= 1.5 && (
+                  <li><strong className="text-rose-600">Régulation Stricte :</strong> IA classée Haut Risque (EU AI Act). L'exposition aux amendes administratives déforme considérablement le radar.</li>
+                )}
+              </ul>
+            </div>
+          </div>
+
+          {/* ANALYSES AVANCÉES (ESG & ROI) ET GRAPHIQUE BARRE */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:break-inside-avoid">
+            
+            <div className="space-y-6 flex flex-col justify-between">
+              <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-2">
+                    <TrendingDown className="w-4 h-4" /> ROI de la Prévention
+                  </h3>
+                  <p className="text-2xl font-black text-emerald-700">
+                    {calculs.economiePrevention > 0 ? `-${formatEuro(calculs.economiePrevention)}` : '0 €'}
+                  </p>
+                  <p className="text-[9px] font-bold text-emerald-500 uppercase mt-1">Économie de prime annuelle estimée</p>
+                </div>
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <Banknote className="w-6 h-6 text-emerald-500" />
+                </div>
+              </div>
+
+              <div className="bg-teal-50 p-6 rounded-[2rem] border border-teal-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-1 flex items-center gap-2">
+                    <Leaf className="w-4 h-4" /> Score Gouvernance IA (ESG)
+                  </h3>
+                  <p className="text-2xl font-black text-teal-700">{calculs.esgScore} / 100</p>
+                  <p className="text-[9px] font-bold text-teal-500 uppercase mt-1">Évaluation extra-financière du risque</p>
+                </div>
+                <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                  <Award className="w-6 h-6 text-teal-500" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 h-64 md:h-full flex flex-col">
+              <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest text-center">
+                Ventilation : Rétention vs Cession ({tauxCession}% Quota Share)
+              </h3>
+              <div className="flex-1 w-full min-h-[150px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={calculs.barData} margin={{ top: 10, right: 10, bottom: 20, left: -20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
@@ -461,35 +519,12 @@ const App = () => {
                 </ResponsiveContainer>
               </div>
             </div>
-
-            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 h-80 flex flex-col">
-              <h3 className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest text-center">
-                Radar de Risque Systémique
-              </h3>
-              <div className="flex-1 w-full min-h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="50%" data={calculs.radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                    <PolarGrid stroke="#e2e8f0" />
-                    <PolarAngleAxis dataKey="subject" fontSize={9} stroke="#64748b" fontWeight="bold" tick={{ fill: '#475569', fontSize: 9 }} />
-                    <Radar 
-                      name="Exposition" 
-                      dataKey="A" 
-                      stroke="#4f46e5" 
-                      strokeWidth={3}
-                      fill="#818cf8" 
-                      fillOpacity={0.4} 
-                    />
-                    <Tooltip />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
           </div>
         </div>
       </main>
 
       {/* FOOTER : La touche institutionnelle AlgoPolis */}
-      <footer className="max-w-7xl mx-auto w-full mt-12 mb-4 pt-8 border-t border-slate-200 shrink-0">
+      <footer className="max-w-7xl mx-auto w-full mt-12 mb-4 pt-8 border-t border-slate-200 shrink-0 print:border-t-2 print:border-slate-800">
         <div className="flex flex-col items-center justify-center space-y-2 text-center">
           <h2 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em]">AlgoPolis</h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
