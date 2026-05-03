@@ -1,0 +1,252 @@
+import React, { useState, useMemo } from 'react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  RadarChart, PolarGrid, PolarAngleAxis, Radar
+} from 'recharts';
+import { AlertTriangle, Cpu, FileText, Banknote } from 'lucide-react';
+
+// Formateur en Euros (Sorti du composant pour éviter les re-rendus inutiles)
+const formatEuro = (val) => new Intl.NumberFormat('fr-FR', { 
+  style: 'currency', 
+  currency: 'EUR', 
+  maximumFractionDigits: 0 
+}).format(val);
+
+// Formateur custom pour les tooltips des graphiques
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100">
+        <p className="font-bold text-slate-700">{payload[0].payload.name || payload[0].name}</p>
+        <p className="text-indigo-600 font-black">{formatEuro(payload[0].value)}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const App = () => {
+  // 1. Paramètres du Client (Variables de Souscription)
+  const [caClient, setCaClient] = useState(50); // CA en Millions
+  const [secteur, setSecteur] = useState(1.5); // Multiplicateur de risque (Finance = haut, Retail = bas)
+  const [niveauAutonomie, setNiveauAutonomie] = useState(3); // 1 = Copilot, 5 = Full Agentic
+  const [donneesSensibles, setDonneesSensibles] = useState(2); // 1 = Faible, 3 = Critique (Santé/Finance)
+
+  // 2. Moteur de Pricing (Logique Actuarielle)
+  const calculs = useMemo(() => {
+    // Calcul du Probable Maximum Loss (PML)
+    // On estime que l'exposition de base est de 10% du CA
+    const baseExposure = caClient * 1000000 * 0.10; 
+    const pml = baseExposure * secteur * (niveauAutonomie / 2) * (donneesSensibles / 1.5);
+
+    // Calcul de la Prime Pure (Fréquence x Gravité)
+    // Plus l'autonomie est forte, plus la fréquence d'erreur/hallucination augmente
+    const probabiliteSinistre = (niveauAutonomie * 0.02) + (donneesSensibles * 0.01);
+    const primePure = pml * probabiliteSinistre;
+
+    // Chargements (Marges, Frais d'acquisition, Réassurance)
+    const primeCommerciale = primePure * 1.45; // Chargement de 45%
+
+    // Ventilation des risques pour le Radar Chart (Scores sur 100)
+    const cyberRisk = Math.min(100, 20 * donneesSensibles * secteur);
+    const eoRisk = Math.min(100, 15 * niveauAutonomie * secteur); // Errors & Omissions
+    const reputationalRisk = Math.min(100, 10 * niveauAutonomie * (caClient > 100 ? 2 : 1));
+    const biRisk = Math.min(100, 25 * niveauAutonomie); // Business Interruption (Perte d'exploitation)
+
+    return {
+      pml,
+      primePure,
+      primeCommerciale,
+      radarData: [
+        { subject: 'Cyber / Fuite Data', A: cyberRisk, fullMark: 100 },
+        { subject: 'E&O (Hallucination)', A: eoRisk, fullMark: 100 },
+        { subject: 'Perte d\'Exploitation', A: biRisk, fullMark: 100 },
+        { subject: 'Atteinte Réputation', A: reputationalRisk, fullMark: 100 },
+      ],
+      barData: [
+        { name: 'Prime Pure (Risque)', value: primePure, color: '#3b82f6' },
+        { name: 'Marge & Frais', value: primeCommerciale - primePure, color: '#10b981' },
+      ]
+    };
+  }, [caClient, secteur, niveauAutonomie, donneesSensibles]);
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800">
+      
+      {/* HEADER */}
+      <header className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row items-start md:items-center gap-4 border-b border-slate-200 pb-6">
+        <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200">
+          <Cpu className="text-white w-8 h-8" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-black uppercase italic tracking-tight text-slate-800">
+            Agentic AI : Underwriting & Pricing Engine
+          </h1>
+          <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+            AlgoPolis - Simulation RC Pro / Cyber
+          </p>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* COLONNE GAUCHE : PANNEAU DE SOUSCRIPTION (INPUTS) */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+            <h2 className="text-xs font-black uppercase text-slate-400 mb-6 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-rose-500" /> Profil de l'Assuré
+            </h2>
+            
+            <div className="space-y-6">
+              {/* Slider CA */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <label className="text-[10px] font-bold uppercase text-slate-500 mb-2 block">
+                  Chiffre d'Affaires Exposé
+                </label>
+                <input 
+                  type="range" min="1" max="500" 
+                  value={caClient} 
+                  onChange={(e) => setCaClient(Number(e.target.value))} 
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" 
+                />
+                <div className="text-right font-black text-indigo-600 text-lg mt-1">{caClient} M€</div>
+              </div>
+
+              {/* Select Secteur */}
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-500 mb-2 block">Secteur d'Activité</label>
+                <select 
+                  value={secteur} 
+                  onChange={(e) => setSecteur(Number(e.target.value))} 
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                >
+                  <option value={0.8}>Retail / E-commerce (Faible)</option>
+                  <option value={1.2}>Industrie / Logistique (Moyen)</option>
+                  <option value={1.8}>Banque / Santé / Défense (Critique)</option>
+                </select>
+              </div>
+
+              {/* Select Autonomie */}
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-500 mb-2 block">Niveau d'Autonomie IA</label>
+                <select 
+                  value={niveauAutonomie} 
+                  onChange={(e) => setNiveauAutonomie(Number(e.target.value))} 
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                >
+                  <option value={1}>Niveau 1 : Co-pilote (Validation Humaine)</option>
+                  <option value={3}>Niveau 3 : Agentique (Kill-switch humain)</option>
+                  <option value={5}>Niveau 5 : Full Autonome (Zero-Touch)</option>
+                </select>
+              </div>
+
+              {/* Slider RGPD */}
+              <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                <label className="text-[10px] font-bold uppercase text-rose-500 mb-2 block">
+                  Sensibilité des Données (RGPD)
+                </label>
+                <input 
+                  type="range" min="1" max="3" step="0.5" 
+                  value={donneesSensibles} 
+                  onChange={(e) => setDonneesSensibles(Number(e.target.value))} 
+                  className="w-full h-1.5 bg-rose-200 rounded-lg appearance-none cursor-pointer accent-rose-500" 
+                />
+                <div className="flex justify-between text-[9px] font-bold text-rose-400 mt-2 uppercase">
+                  <span>Publique</span>
+                  <span>Interne</span>
+                  <span>Critique</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* COLONNE DROITE : DASHBOARD DE PRICING (OUTPUTS) */}
+        <div className="lg:col-span-8 space-y-6">
+          
+          {/* LIGNE DES KPIS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* KPI: Probable Maximum Loss */}
+            <div className="bg-slate-800 text-white p-8 rounded-[2rem] shadow-xl border border-slate-700 relative overflow-hidden group">
+              <AlertTriangle className="absolute -right-8 -bottom-8 w-40 h-40 text-slate-700 opacity-30 group-hover:opacity-50 transition-opacity" />
+              <div className="relative z-10">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-rose-400 mb-3">Exposition Maximale (PML)</h3>
+                <p className="text-4xl md:text-5xl font-black mb-2 tracking-tight">{formatEuro(calculs.pml)}</p>
+                <p className="text-xs font-medium text-slate-400 leading-relaxed">
+                  Plafond théorique de garantie requis en cas d'emballement algorithmique systémique.
+                </p>
+              </div>
+            </div>
+
+            {/* KPI: Prime Commerciale */}
+            <div className="bg-indigo-600 text-white p-8 rounded-[2rem] shadow-xl shadow-indigo-200 border border-indigo-500 relative overflow-hidden group">
+              <Banknote className="absolute -right-8 -bottom-8 w-40 h-40 text-indigo-500 opacity-50 group-hover:opacity-70 transition-opacity" />
+              <div className="relative z-10">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">Prime Technique Suggérée</h3>
+                <p className="text-4xl md:text-5xl font-black mb-2 tracking-tight">{formatEuro(calculs.primeCommerciale)}</p>
+                <p className="text-xs font-medium text-indigo-200 leading-relaxed">
+                  Prime annuelle incluant les chargements (Marge technique & Frais d'acquisition).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* LIGNE DES GRAPHIQUES */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Graphique: Décomposition */}
+            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 h-80 flex flex-col">
+              <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest text-center">
+                Décomposition de la Prime Technique
+              </h3>
+              <div className="flex-1 w-full min-h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={calculs.barData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
+                    <XAxis dataKey="name" fontSize={10} stroke="#94a3b8" fontWeight="bold" tickMargin={10} border="none" />
+                    <YAxis hide />
+                    <Tooltip content={<CustomTooltip />} cursor={{fill: '#f1f5f9'}} />
+                    <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={50}>
+                      {calculs.barData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Graphique: Radar de Risque */}
+            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 h-80 flex flex-col">
+              <h3 className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest text-center">
+                Profil de Risque IA Systémique
+              </h3>
+              <div className="flex-1 w-full min-h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="65%" data={calculs.radarData}>
+                    <PolarGrid stroke="#e2e8f0" />
+                    <PolarAngleAxis dataKey="subject" fontSize={10} stroke="#64748b" fontWeight="bold" />
+                    <Radar 
+                      name="Score de Risque" 
+                      dataKey="A" 
+                      stroke="#4f46e5" 
+                      strokeWidth={3}
+                      fill="#818cf8" 
+                      fillOpacity={0.4} 
+                    />
+                    <Tooltip />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </main>
+    </div>
+  );
+};
+
+export default App;
