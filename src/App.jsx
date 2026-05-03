@@ -35,7 +35,7 @@ const CustomRadarTick = ({ payload, x, y, cx, cy, textAnchor }) => {
   const dx = x - cx;
   const dy = y - cy;
   const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-  const pushOut = 22; // Force d'écartement RÉAJUSTÉE pour le grand radar
+  const pushOut = 15; // Force d'écartement RÉAJUSTÉE pour le radar taille max
   const newX = x + (dx / dist) * pushOut;
   const newY = y + (dy / dist) * pushOut;
 
@@ -450,7 +450,7 @@ const App = () => {
               </h3>
               <div className="flex-1 w-full relative min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={calculs.radarData} margin={{ top: 20, right: 45, bottom: 20, left: 45 }}>
+                  <RadarChart cx="50%" cy="50%" outerRadius="85%" data={calculs.radarData} margin={{ top: 20, right: 55, bottom: 20, left: 55 }}>
                     <PolarGrid stroke="#e2e8f0" />
                     <PolarAngleAxis dataKey="subject" tick={<CustomRadarTick />} />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
