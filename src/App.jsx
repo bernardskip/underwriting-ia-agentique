@@ -5,7 +5,8 @@ import {
 } from 'recharts';
 import { 
   AlertTriangle, Cpu, FileText, Banknote, ShieldCheck, 
-  Sliders, Scale, Leaf, TrendingDown, Award 
+  Sliders, Scale, Leaf, TrendingDown, Award, Ban,
+  Download, GitCompare, Cloud, HardDrive
 } from 'lucide-react';
 
 // Formateur en Euros
@@ -15,7 +16,7 @@ const formatEuro = (val) => new Intl.NumberFormat('fr-FR', {
   maximumFractionDigits: 0 
 }).format(val);
 
-// Formateur custom pour les tooltips des graphiques
+// Formateur custom pour les tooltips
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
@@ -30,41 +31,56 @@ const CustomTooltip = ({ active, payload }) => {
 
 const App = () => {
   // 1. Paramètres du Client (Exposition métier)
-  const [caClient, setCaClient] = useState(150); 
+  const [caClient, setCaClient] = useState(250); 
   const [secteur, setSecteur] = useState(1.5); 
   const [niveauAutonomie, setNiveauAutonomie] = useState(3); 
   const [donneesSensibles, setDonneesSensibles] = useState(2); 
   
-  // 2. Environnement Réglementaire & Transfert
+  // 2. Environnement Réglementaire & Architecture (NOUVEAU)
   const [euAiAct, setEuAiAct] = useState(1.2); 
+  const [modeleLLM, setModeleLLM] = useState('cloud_openai'); // cloud_openai, cloud_anthropic, local_os
   const [tauxCession, setTauxCession] = useState(30); 
 
-  // 3. Structuration du Programme (Mitigation)
-  const [franchise, setFranchise] = useState(100000); 
+  // 3. Structuration du Programme (Mitigation & Exclusions)
+  const [franchise, setFranchise] = useState(250000); 
   const [hasGuardrails, setHasGuardrails] = useState(false); 
   const [hasAudit, setHasAudit] = useState(true); 
+  const [exclureIP, setExclureIP] = useState(false); 
+  const [exclureCorporel, setExclureCorporel] = useState(false); 
 
-  // 4. Moteur de Pricing Actuariel
+  // 4. A/B Testing - Scénario Sauvegardé (NOUVEAU)
+  const [scenarioA, setScenarioA] = useState(null);
+
+  // 5. Moteur de Pricing Actuariel
   const calculs = useMemo(() => {
+    // Multiplicateurs de Risque d'Accumulation (Architecture LLM)
+    const isLocal = modeleLLM === 'local_os';
+    const cloudDependencyMultiplier = isLocal ? 0.4 : 1.5; // Perte d'exploitation si API down
+    const selfHostedCyberRisk = isLocal ? 1.4 : 1.0; // Cyber-attaque sur l'infra locale du client
+
     // A. EXPOSITION BRUTE
     const baseExposure = caClient * 1000000 * 0.10; 
-    let pmlBrut = baseExposure * secteur * (niveauAutonomie / 2) * (donneesSensibles / 1.5) * euAiAct;
+    let pmlBrut = baseExposure * secteur * (niveauAutonomie / 2.5) * (donneesSensibles / 1.5) * euAiAct;
 
-    // B. MITIGATION (Réduction du risque)
+    // B. MITIGATION & EXCLUSIONS
     let riskDiscount = 1;
     if (hasGuardrails) riskDiscount -= 0.15; 
     if (hasAudit) riskDiscount -= 0.10; 
+    if (exclureIP) riskDiscount -= 0.10; 
+    if (exclureCorporel && secteur >= 1.5) riskDiscount -= 0.25; 
+    else if (exclureCorporel) riskDiscount -= 0.05;
+
+    riskDiscount = Math.max(0.40, riskDiscount);
     const pmlNet = pmlBrut * riskDiscount;
 
     // C. PRIME PURE & FRANCHISE
-    const probabiliteBrute = (niveauAutonomie * 0.02) + (donneesSensibles * 0.01);
+    const probabiliteBrute = (niveauAutonomie * 0.015) + (donneesSensibles * 0.01);
     let probabiliteSinistre = probabiliteBrute * riskDiscount;
-    
     let primePure = pmlNet * probabiliteSinistre;
-    const discountFranchise = Math.max(0.50, 1 - (franchise / 2000000));
+    
+    const discountFranchise = Math.max(0.40, 1 - (franchise / 10000000));
     primePure = primePure * discountFranchise;
 
-    // Calcul de la prime SANS prévention (pour le calcul du ROI)
     const primePureSansPrevention = pmlBrut * probabiliteBrute * discountFranchise;
     const primeCommercialeSansPrevention = primePureSansPrevention * 1.45;
 
@@ -76,18 +92,22 @@ const App = () => {
     // E. ECONOMIE DE PREVENTION (ROI)
     const economiePrevention = primeCommercialeSansPrevention - primeCommerciale;
 
-    // F. SCORE ESG & GOUVERNANCE IA (Note sur 100)
+    // F. SCORE ESG & GOUVERNANCE IA
     let baseEsg = 70;
     let esgScore = baseEsg - (niveauAutonomie * 5) - (donneesSensibles * 2) - ((euAiAct - 1) * 20);
     if (hasGuardrails) esgScore += 15;
     if (hasAudit) esgScore += 20;
+    if (isLocal) esgScore += 10; // Prime à la souveraineté des données (ESG positif)
     esgScore = Math.min(100, Math.max(0, esgScore));
 
-    // G. VENTILATION DES RISQUES (Radar)
-    const cyberRisk = Math.min(100, 20 * donneesSensibles * secteur * riskDiscount);
-    const eoRisk = Math.min(100, 15 * niveauAutonomie * euAiAct * riskDiscount);
-    const complianceRisk = Math.min(100, 30 * euAiAct * (donneesSensibles / 2));
-    const biRisk = Math.min(100, 25 * niveauAutonomie * riskDiscount); 
+    // G. VENTILATION DES RISQUES (Radar ajusté par l'Architecture)
+    let cyberRisk = Math.min(100, 20 * donneesSensibles * secteur * riskDiscount * selfHostedCyberRisk);
+    let eoRisk = Math.min(100, 15 * niveauAutonomie * euAiAct * riskDiscount);
+    let complianceRisk = Math.min(100, 30 * euAiAct * (donneesSensibles / 2));
+    let biRisk = Math.min(100, 25 * niveauAutonomie * riskDiscount * cloudDependencyMultiplier); 
+    
+    if (exclureIP) eoRisk *= 0.6; 
+    if (exclureCorporel && secteur >= 1.5) eoRisk *= 0.4; 
 
     return {
       pml: pmlNet,
@@ -100,25 +120,42 @@ const App = () => {
         { subject: 'Cyber Extorsion', A: cyberRisk, fullMark: 100 },
         { subject: 'E&O (Hallucination)', A: eoRisk, fullMark: 100 },
         { subject: 'Perte Exploitation', A: biRisk, fullMark: 100 },
-        { subject: 'Amendes Réglementaires', A: complianceRisk, fullMark: 100 },
+        { subject: 'Amendes (EU AI Act)', A: complianceRisk, fullMark: 100 },
       ],
       barData: [
         { name: 'Prime Nette (Assureur)', value: primeNetteConservee, color: '#4f46e5' },
         { name: 'Prime Cédée (Réassureur)', value: primeCedee, color: '#0ea5e9' },
       ]
     };
-  }, [caClient, secteur, niveauAutonomie, donneesSensibles, franchise, hasGuardrails, hasAudit, euAiAct, tauxCession]);
+  }, [caClient, secteur, niveauAutonomie, donneesSensibles, franchise, hasGuardrails, hasAudit, exclureIP, exclureCorporel, euAiAct, modeleLLM, tauxCession]);
 
-  // Handler propre pour le CA
   const handleCaChange = (e) => {
     let val = Number(e.target.value);
     setCaClient(val < 0 ? 0 : val);
   };
 
+  const saveScenarioA = () => {
+    setScenarioA({
+      name: `Franchise ${formatEuro(franchise)} | ${isLocalLLM ? 'Local' : 'Cloud'} | ${hasGuardrails ? 'Sécurisé' : 'Standard'}`,
+      primeCommerciale: calculs.primeCommerciale,
+      pml: calculs.pml,
+      esgScore: calculs.esgScore
+    });
+  };
+
+  const resetScenarioA = () => setScenarioA(null);
+
+  // Fonction factice d'impression (Génération PDF native du navigateur)
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const isLocalLLM = modeleLLM === 'local_os';
+
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800 flex flex-col">
       
-      {/* HEADER */}
+      {/* HEADER AVEC BOUTON EXPORT */}
       <header className="max-w-7xl mx-auto w-full mb-8 flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 pb-6 gap-4 shrink-0">
         <div className="flex items-center gap-4">
           <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200">
@@ -133,6 +170,14 @@ const App = () => {
             </p>
           </div>
         </div>
+        
+        {/* BOUTON D'ACTION MÉTIER (PDF) */}
+        <button 
+          onClick={handlePrint}
+          className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-lg shadow-slate-200"
+        >
+          <Download className="w-4 h-4" /> Term Sheet (PDF)
+        </button>
       </header>
 
       <main className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
@@ -171,22 +216,39 @@ const App = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[9px] font-bold uppercase text-slate-500 mb-2 block">Secteur</label>
+                <div className="col-span-2">
+                  <label className="text-[9px] font-bold uppercase text-slate-500 mb-2 block">Secteur d'Activité</label>
                   <select value={secteur} onChange={(e) => setSecteur(Number(e.target.value))} className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none">
-                    <option value={0.8}>Retail</option>
-                    <option value={1.2}>Industrie</option>
-                    <option value={1.8}>Finance/Santé</option>
+                    <option value={0.6}>Tech / SaaS (Très Faible)</option>
+                    <option value={1.0}>Retail / Services Pro (Standard)</option>
+                    <option value={1.5}>Industrie / Supply Chain (Élevé)</option>
+                    <option value={2.0}>Finance / Assurance (Critique)</option>
+                    <option value={2.8}>Santé / Infra. Critiques (Extrême)</option>
                   </select>
                 </div>
-                <div>
-                  <label className="text-[9px] font-bold uppercase text-slate-500 mb-2 block">Autonomie</label>
+                <div className="col-span-2">
+                  <label className="text-[9px] font-bold uppercase text-slate-500 mb-2 block">Autonomie (Scale L1-L5)</label>
                   <select value={niveauAutonomie} onChange={(e) => setNiveauAutonomie(Number(e.target.value))} className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none">
-                    <option value={1}>L1 (Copilot)</option>
-                    <option value={3}>L3 (Agentique)</option>
-                    <option value={5}>L5 (Zero-Touch)</option>
+                    <option value={1}>L1 - Assistant (Brouillon validé)</option>
+                    <option value={2}>L2 - Co-pilote (Human in the loop)</option>
+                    <option value={3}>L3 - Agent restreint (Kill-switch)</option>
+                    <option value={4}>L4 - Agent autonome (Périmètre fixe)</option>
+                    <option value={5}>L5 - IA Systémique (Zero-Touch)</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Modèle Fondamental (Risque Accumulation) */}
+              <div className={`p-4 rounded-2xl border ${isLocalLLM ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}`}>
+                <label className={`text-[10px] font-bold uppercase mb-2 flex items-center gap-2 ${isLocalLLM ? 'text-emerald-600' : 'text-blue-600'}`}>
+                  {isLocalLLM ? <HardDrive className="w-3 h-3" /> : <Cloud className="w-3 h-3" />} 
+                  Modèle Fondamental (LLM)
+                </label>
+                <select value={modeleLLM} onChange={(e) => setModeleLLM(e.target.value)} className={`w-full p-2 bg-white border rounded-xl text-xs font-bold outline-none ${isLocalLLM ? 'border-emerald-200 text-emerald-700' : 'border-blue-200 text-blue-700'}`}>
+                  <option value="cloud_openai">Cloud : OpenAI GPT-4 (Risque Accumulation)</option>
+                  <option value="cloud_anthropic">Cloud : Anthropic Claude</option>
+                  <option value="local_os">Local : Mistral / Llama (Risque Cyber interne)</option>
+                </select>
               </div>
 
               <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
@@ -215,7 +277,7 @@ const App = () => {
                   <span className="text-emerald-400 font-bold">{formatEuro(franchise)}</span>
                 </label>
                 <input 
-                  type="range" min="0" max="1000000" step="50000"
+                  type="range" min="0" max="5000000" step="50000"
                   value={franchise} 
                   onChange={(e) => setFranchise(Number(e.target.value))} 
                   className="w-full h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500" 
@@ -235,22 +297,54 @@ const App = () => {
                 />
               </div>
 
-              <div className="pt-4 border-t border-slate-600 space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <div className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${hasGuardrails ? 'bg-indigo-500 border-indigo-500' : 'bg-slate-700 border-slate-500'}`}>
-                    {hasGuardrails && <ShieldCheck className="w-3 h-3 text-white" />}
-                  </div>
-                  <input type="checkbox" className="hidden" checked={hasGuardrails} onChange={() => setHasGuardrails(!hasGuardrails)} />
-                  <span className="text-xs font-bold text-slate-200">Garde-fous LLM (RAG)</span>
-                </label>
+              <div className="pt-4 border-t border-slate-600 grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <p className="text-[9px] uppercase text-slate-400 font-bold mb-2">Prévention</p>
+                  <label className="flex items-start gap-2 cursor-pointer group">
+                    <div className={`w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-colors ${hasGuardrails ? 'bg-indigo-500 border-indigo-500' : 'bg-slate-700 border-slate-500'}`}>
+                      {hasGuardrails && <ShieldCheck className="w-3 h-3 text-white" />}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={hasGuardrails} onChange={() => setHasGuardrails(!hasGuardrails)} />
+                    <span className="text-[10px] font-bold text-slate-200 leading-tight">Garde-fous LLM (RAG)</span>
+                  </label>
 
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <div className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${hasAudit ? 'bg-indigo-500 border-indigo-500' : 'bg-slate-700 border-slate-500'}`}>
-                    {hasAudit && <ShieldCheck className="w-3 h-3 text-white" />}
-                  </div>
-                  <input type="checkbox" className="hidden" checked={hasAudit} onChange={() => setHasAudit(!hasAudit)} />
-                  <span className="text-xs font-bold text-slate-200">Audit Red-Teaming annuel</span>
-                </label>
+                  <label className="flex items-start gap-2 cursor-pointer group">
+                    <div className={`w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-colors ${hasAudit ? 'bg-indigo-500 border-indigo-500' : 'bg-slate-700 border-slate-500'}`}>
+                      {hasAudit && <ShieldCheck className="w-3 h-3 text-white" />}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={hasAudit} onChange={() => setHasAudit(!hasAudit)} />
+                    <span className="text-[10px] font-bold text-slate-200 leading-tight">Audit Red-Teaming</span>
+                  </label>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-[9px] uppercase text-slate-400 font-bold mb-2">Exclusions (IP / BI)</p>
+                  <label className="flex items-start gap-2 cursor-pointer group">
+                    <div className={`w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-colors ${exclureIP ? 'bg-rose-500 border-rose-500' : 'bg-slate-700 border-slate-500'}`}>
+                      {exclureIP && <Ban className="w-3 h-3 text-white" />}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={exclureIP} onChange={() => setExclureIP(!exclureIP)} />
+                    <span className="text-[10px] font-bold text-slate-200 leading-tight">Propriété Intellectuelle (IP)</span>
+                  </label>
+
+                  <label className="flex items-start gap-2 cursor-pointer group">
+                    <div className={`w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-colors ${exclureCorporel ? 'bg-rose-500 border-rose-500' : 'bg-slate-700 border-slate-500'}`}>
+                      {exclureCorporel && <Ban className="w-3 h-3 text-white" />}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={exclureCorporel} onChange={() => setExclureCorporel(!exclureCorporel)} />
+                    <span className="text-[10px] font-bold text-slate-200 leading-tight">Dommages Corporels</span>
+                  </label>
+                </div>
+              </div>
+              
+              {/* BOUTON A/B TESTING */}
+              <div className="pt-4 border-t border-slate-600">
+                <button 
+                  onClick={saveScenarioA}
+                  className="w-full bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/50 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"
+                >
+                  <GitCompare className="w-4 h-4" /> Sauvegarder comme Scénario A
+                </button>
               </div>
             </div>
           </div>
@@ -267,7 +361,7 @@ const App = () => {
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-3">Probable Maximum Loss (PML)</h3>
                 <p className="text-4xl lg:text-5xl font-black mb-2 tracking-tight text-slate-800">{formatEuro(calculs.pml)}</p>
                 <p className="text-xs font-medium text-slate-500 leading-relaxed">
-                  Plafond d'exposition ajusté selon les normes de l'EU AI Act et la prévention.
+                  Plafond d'exposition ajusté (Exclusions, EU AI Act, Prévention).
                 </p>
               </div>
             </div>
@@ -278,13 +372,43 @@ const App = () => {
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">Prime Commerciale Totale</h3>
                 <p className="text-4xl lg:text-5xl font-black mb-2 tracking-tight">{formatEuro(calculs.primeCommerciale)}</p>
                 <p className="text-xs font-medium text-indigo-200 leading-relaxed">
-                  Prime globale (100%) payée par l'assuré pour transférer le risque cognitif.
+                  Prime globale payée par l'assuré (100% du risque avant réassurance).
                 </p>
               </div>
             </div>
           </div>
 
-          {/* NOUVEAU BLOC : ANALYSES AVANCÉES (ESG & ROI) */}
+          {/* PANNEAU A/B TESTING (Apparaît si Scénario A sauvegardé) */}
+          {scenarioA && (
+            <div className="bg-slate-800 p-6 rounded-[2rem] shadow-lg border border-indigo-500 flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
+              <div className="flex-1">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-1 flex items-center gap-2">
+                  <GitCompare className="w-4 h-4" /> Comparateur : Actuel vs Scénario A
+                </h3>
+                <p className="text-xs font-bold text-slate-300">Réf Scénario A : {scenarioA.name}</p>
+              </div>
+              
+              <div className="flex gap-6">
+                <div className="text-right">
+                  <p className="text-[9px] uppercase font-bold text-slate-400 mb-1">Delta Prime</p>
+                  <p className={`text-xl font-black ${calculs.primeCommerciale < scenarioA.primeCommerciale ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {calculs.primeCommerciale < scenarioA.primeCommerciale ? '-' : '+'}{formatEuro(Math.abs(calculs.primeCommerciale - scenarioA.primeCommerciale))}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] uppercase font-bold text-slate-400 mb-1">Delta PML</p>
+                  <p className={`text-xl font-black ${calculs.pml < scenarioA.pml ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {calculs.pml < scenarioA.pml ? '-' : '+'}{formatEuro(Math.abs(calculs.pml - scenarioA.pml))}
+                  </p>
+                </div>
+              </div>
+              <button onClick={resetScenarioA} className="bg-slate-700 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 p-2 rounded-xl transition-colors">
+                <Ban className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* ANALYSES AVANCÉES (ESG & ROI) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 flex items-center justify-between">
               <div>
@@ -343,7 +467,6 @@ const App = () => {
                 Radar de Risque Systémique
               </h3>
               <div className="flex-1 w-full min-h-[200px]">
-                {/* Correction du margin et de l'outerRadius pour empêcher les coupures */}
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="50%" data={calculs.radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
                     <PolarGrid stroke="#e2e8f0" />
