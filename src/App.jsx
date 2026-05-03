@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  RadarChart, PolarGrid, PolarAngleAxis, Radar
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
 import { 
   AlertTriangle, Cpu, FileText, Banknote, ShieldCheck, 
@@ -27,6 +27,35 @@ const CustomTooltip = ({ active, payload }) => {
     );
   }
   return null;
+};
+
+// NOUVEAU : Formateur custom pour écarter les labels du radar et gérer les retours à la ligne
+const CustomRadarTick = ({ payload, x, y, cx, cy, textAnchor }) => {
+  // 1. Éloignement du label par rapport au centre (vecteur)
+  const dx = x - cx;
+  const dy = y - cy;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  const pushOut = 22; // Force d'écartement RÉAJUSTÉE pour le grand radar
+  const newX = x + (dx / dist) * pushOut;
+  const newY = y + (dy / dist) * pushOut;
+
+  // 2. Détection des parenthèses pour le retour à la ligne
+  const value = payload.value;
+  let line1 = value;
+  let line2 = "";
+  
+  if (value.includes(" (")) {
+    const parts = value.split(" (");
+    line1 = parts[0];
+    line2 = "(" + parts[1];
+  }
+
+  return (
+    <text x={newX} y={newY} textAnchor={textAnchor} fontSize={10} fill="#475569" fontWeight="bold">
+      <tspan x={newX} dy={line2 ? "-0.4em" : "0.3em"}>{line1}</tspan>
+      {line2 && <tspan x={newX} dy="1.2em">{line2}</tspan>}
+    </text>
+  );
 };
 
 const App = () => {
@@ -413,31 +442,34 @@ const App = () => {
           </div>
 
           {/* LE RADAR GÉANT EN PLEINE LARGEUR */}
-          <div className="bg-white p-6 md:p-10 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-8 print:break-inside-avoid">
+          <div className="bg-white p-6 md:p-10 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col md:flex-row items-stretch gap-8 print:break-inside-avoid">
             
-            <div className="flex-1 w-full min-h-[350px]">
-              <h3 className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest text-center">
+            <div className="flex-1 w-full h-[300px] md:h-[350px] flex flex-col">
+              <h3 className="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest text-center shrink-0">
                 Radar de Risque Systémique
               </h3>
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="65%" data={calculs.radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                  <PolarGrid stroke="#e2e8f0" />
-                  <PolarAngleAxis dataKey="subject" fontSize={10} stroke="#475569" fontWeight="bold" />
-                  <Radar 
-                    name="Exposition" 
-                    dataKey="A" 
-                    stroke="#4f46e5" 
-                    strokeWidth={3}
-                    fill="#818cf8" 
-                    fillOpacity={0.4} 
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                </RadarChart>
-              </ResponsiveContainer>
+              <div className="flex-1 w-full relative min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={calculs.radarData} margin={{ top: 20, right: 45, bottom: 20, left: 45 }}>
+                    <PolarGrid stroke="#e2e8f0" />
+                    <PolarAngleAxis dataKey="subject" tick={<CustomRadarTick />} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                    <Radar 
+                      name="Exposition" 
+                      dataKey="A" 
+                      stroke="#4f46e5" 
+                      strokeWidth={3}
+                      fill="#818cf8" 
+                      fillOpacity={0.4} 
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             {/* Panneau d'Analyse Dynamique */}
-            <div className="md:w-1/3 space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+            <div className="md:w-1/3 space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col justify-center">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 flex items-center gap-2 mb-4">
                 <Info className="w-4 h-4" /> Analyse en temps réel
               </h4>
